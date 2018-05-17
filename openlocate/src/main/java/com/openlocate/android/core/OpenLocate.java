@@ -456,6 +456,10 @@ public class OpenLocate implements OpenLocateLocationTracker {
             setPreferences();
     }
 
+    public int sendLocations(Context context) throws JSONException {
+        return DispatchLocationService.sendLocations(context);
+    }
+
     private void setPreferences() {
         SharedPreferences preferences = context.getSharedPreferences(Constants.OPENLOCATE, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
