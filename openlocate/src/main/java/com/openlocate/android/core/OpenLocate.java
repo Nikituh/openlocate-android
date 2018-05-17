@@ -173,6 +173,7 @@ public class OpenLocate implements OpenLocateLocationTracker {
 
             public Configuration build() {
                 if (serverUrl != null) {
+
                     Endpoint endpoint = new Endpoint(serverUrl, headers);
 
                     if (endpoints == null) {

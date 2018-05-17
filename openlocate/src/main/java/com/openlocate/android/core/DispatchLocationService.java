@@ -21,6 +21,7 @@
  */
 package com.openlocate.android.core;
 
+import android.content.Context;
 import android.database.sqlite.SQLiteFullException;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
@@ -46,9 +47,6 @@ final public class DispatchLocationService extends GcmTaskService {
 
     @Override
     public int onRunTask(TaskParams taskParams) {
-        SQLiteOpenHelper helper = DatabaseHelper.getInstance(this);
-        LocationDataSource dataSource = new LocationDatabase(helper);
-        HttpClient httpClient = new HttpClientImpl();
 
         List<OpenLocate.Endpoint> endpoints = null;
         try {
@@ -56,6 +54,15 @@ final public class DispatchLocationService extends GcmTaskService {
         } catch (JSONException e) {
             e.printStackTrace();
         }
+
+        return sendLocations(this, endpoints);
+    }
+
+    public static int sendLocations(Context context, List<OpenLocate.Endpoint> endpoints) {
+
+        SQLiteOpenHelper helper = DatabaseHelper.getInstance(context);
+        LocationDataSource dataSource = new LocationDatabase(helper);
+        HttpClient httpClient = new HttpClientImpl();
 
         LocationDispatcher dispatcher = new LocationDispatcher();
 
@@ -65,18 +72,20 @@ final public class DispatchLocationService extends GcmTaskService {
             String key = md5(endpoint.getUrl().toLowerCase());
 
             try {
-                long timestamp = SharedPreferenceUtils.getInstance(this).getLongValue(key, 0);
-                List<OpenLocateLocation> sentLocations = dispatcher.postLocations(httpClient, endpoint, timestamp, dataSource);
+                long timestamp = SharedPreferenceUtils.getInstance(context).getLongValue(key, 0);
+                List<OpenLocateLocation> sentLocations =
+                        dispatcher.postLocations(httpClient, endpoint, timestamp, dataSource);
 
                 if (sentLocations != null && sentLocations.isEmpty() == false) {
-                    long latestCreatedLocationDate = sentLocations.get(sentLocations.size() - 1).getCreated().getTime();
-                    SharedPreferenceUtils.getInstance(this).setValue(key, latestCreatedLocationDate);
+                    long latestCreatedLocationDate =
+                            sentLocations.get(sentLocations.size() - 1).getCreated().getTime();
+                    SharedPreferenceUtils.getInstance(context).setValue(key, latestCreatedLocationDate);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
 
-            timestamps.add(SharedPreferenceUtils.getInstance(this).getLongValue(key, 0));
+            timestamps.add(SharedPreferenceUtils.getInstance(context).getLongValue(key, 0));
         }
 
         Long min = Collections.min(timestamps);
@@ -100,7 +109,17 @@ final public class DispatchLocationService extends GcmTaskService {
         return GcmNetworkManager.RESULT_SUCCESS;
     }
 
-    private String md5(String in) {
+    public static int sendLocations(Context context) throws JSONException {
+        return sendLocations(context, getEndpoints(context));
+    }
+
+    public static List<OpenLocate.Endpoint> getEndpoints(Context context) throws JSONException {
+        SharedPreferenceUtils preferences = SharedPreferenceUtils.getInstance(context);
+        String json = preferences.getStringValue(Constants.ENDPOINTS_KEY, "");
+        return OpenLocate.Endpoint.fromJson(json);
+    }
+
+    private static String md5(String in) {
         MessageDigest digest;
         try {
             digest = MessageDigest.getInstance("MD5");
@@ -120,5 +139,4 @@ final public class DispatchLocationService extends GcmTaskService {
 
         return in;
     }
-
 }
