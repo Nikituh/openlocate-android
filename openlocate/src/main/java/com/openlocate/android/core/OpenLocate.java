@@ -344,7 +344,12 @@ public class OpenLocate implements OpenLocateLocationTracker {
 
         public Endpoint(String url, HashMap<String, String> headers) {
             this.url = url;
-            this.headers = headers;
+
+            if (headers == null) {
+                this.headers = new HashMap<>();
+            } else {
+                this.headers = headers;
+            }
         }
 
         private Endpoint(Builder builder) {
