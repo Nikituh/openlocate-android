@@ -43,6 +43,7 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.openlocate.android.callbacks.OpenLocateLocationCallback;
+import com.openlocate.android.callbacks.TrackingEnabledCallback;
 import com.openlocate.android.exceptions.InvalidConfigurationException;
 import com.openlocate.android.exceptions.LocationDisabledException;
 import com.openlocate.android.exceptions.LocationPermissionException;
@@ -547,10 +548,18 @@ public class OpenLocate implements OpenLocateLocationTracker {
 
             }
         }, 5 * 1000, 5 * 1000);
+    }
 
+    private TrackingEnabledCallback trackingEnabled;
+    public void setTrackingEnabledCallback(TrackingEnabledCallback callback) {
+        this.trackingEnabled = callback;
     }
 
     void onPermissionsGranted() {
+
+        if (trackingEnabled != null) {
+            trackingEnabled.trackingEnabled();
+        }
 
         FetchAdvertisingInfoTask task = new FetchAdvertisingInfoTask(context, new FetchAdvertisingInfoTaskCallback() {
             @Override
