@@ -26,6 +26,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.sqlite.SQLiteOpenHelper;
 import android.location.Location;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -616,6 +617,24 @@ public class OpenLocate implements OpenLocateLocationTracker {
             }
         });
         task.execute();
+    }
+
+    public List<EndpointLocation> getOfflineLocations() throws JSONException {
+
+        final List<EndpointLocation> result = new ArrayList<>();
+        final List<OpenLocate.Endpoint> endpoints = DispatchLocationService.getEndpoints(context);
+
+        for (OpenLocate.Endpoint endpoint : endpoints) {
+            String key = DispatchLocationService.md5(endpoint.getUrl().toLowerCase());
+            long timestamp = SharedPreferenceUtils.getInstance(context).getLongValue(key, 0);
+            SQLiteOpenHelper helper = DatabaseHelper.getInstance(context);
+            LocationDataSource dataSource = new LocationDatabase(helper);
+            final List<OpenLocateLocation> locations = dataSource.getSince(timestamp);
+
+            result.add(new EndpointLocation(endpoint, locations));
+        }
+
+        return result;
     }
 
     private void onFetchAdvertisingInfo(AdvertisingIdClient.Info info) {
